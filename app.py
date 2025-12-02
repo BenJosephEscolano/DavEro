@@ -16,6 +16,13 @@ DATA_PATH = "final_project_data/multimodal_features.csv"
 def load_data():
     try:
         df = pd.read_csv(DATA_PATH)
+
+        # --- THE CRITICAL FIX FOR DEPLOYMENT ---
+        # If running on Linux (Streamlit Cloud), Windows paths (\) will fail.
+        # We replace all backslashes with forward slashes to make it cross-platform.
+        if 'path' in df.columns:
+            df['path'] = df['path'].astype(str).str.replace('\\', '/', regex=False)
+
         return df
     except FileNotFoundError:
         return None
