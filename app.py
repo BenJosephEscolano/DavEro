@@ -64,7 +64,7 @@ if page == "1. Project Overview":
         **Research Question:** Can we mathematically "Engineer" the feeling of intimacy?
     
         **The Hypothesis:** Intimacy is not random. It is a specific **Paralinguistic Code** composed of breathiness, proximity, and rhythm. 
-        By analyzing **2,000** clips of hyper-stylized voice acting, we aim to reverse-engineer this code to prove that "Emotion" is just a vector of numbers.
+        By analyzing **1,000** clips of hyper-stylized voice acting, we aim to reverse-engineer this code to prove that "Emotion" is just a vector of numbers.
         """)
 
     # 2. THE TRANSITION (Why this dataset?)
