@@ -36,9 +36,9 @@ with st.sidebar:
 page = st.sidebar.radio("Navigate", [
     "1. Project Overview",
     "2. Data Exploration & Methodology",
-    "3. The Style Tokens (Clustering)",
-    "4. Engineering Intimacy (Physics)",
-    "5. Cross-Modal Alignment (Text)"
+    "3. Analysis Part 1: The Style Tokens (Clustering)",
+    "4. Analysis Part 2: Engineering Intimacy (Physics)",
+    "5. Analysis Part 3: Cross-Modal Alignment (Text)"
 ])
 
 # --- GLOBAL DATA PREP (Normalize Once) ---
@@ -264,10 +264,39 @@ elif page == "2. Data Exploration & Methodology":
             * **Normalization:** Min-Max Scaling (0-1) to ensure Pitch (Hz) doesn't overpower Loudness (dB).
             * **Visualization:** We use **PCA (Principal Component Analysis)** to reduce the 5 dimensions down to 2D for visualization, proving that the clusters are distinct "islands" of emotion.
             """)
+    # D. Feature Engineering (Physics)
+    with st.expander("Feature Engineering (The Physics of Intimacy)"):
+        st.markdown("""
+        **Objective:** To Operationalize the "Proximity Effect."
+
+        We hypothesized that "Intimacy" and "Intensity" are orthogonal vectors, similar to the **Russell Circumplex Model of Affect**.
+        We engineered two composite metrics based on audio physics:
+
+        1.  **Calculated Intimacy (Proximity):** * *Formula:* `(Breathiness * 1.5) + ((1 - Loudness) * 1.0)`
+            * *Logic:* Physical closeness creates the "Proximity Effect" (Bass boost + Airiness). Therefore, High Breathiness + Low Volume = High Intimacy.
+
+        2.  **Calculated Intensity (Arousal):**
+            * *Formula:* `(Loudness * 1.5) + (Pitch * 1.0)`
+            * *Logic:* High physiological arousal results in increased sub-glottal pressure (Loudness) and vocal cord tension (Pitch).
+        """)
+
+    # E. Cross-Modal Validation
+    with st.expander("Cross-Modal Validation (Signal vs. Symbol)"):
+        st.markdown("""
+        **Objective:** To measure Acting Consistency (Congruence).
+
+        We treat the dataset as a dual-stream information source:
+        1.  **The Symbol (Text):** What the script says (Semantic Score).
+        2.  **The Signal (Audio):** How the actor performs it (Acoustic Score).
+
+        By plotting these two normalized vectors against each other, we can identify:
+        * **Congruence:** Points on the diagonal (Good Acting).
+        * **Dissonance:** Points far from the diagonal (Irony, Subversion, or Bad Acting).
+        """)
 
 # ... inside Page 2 logic ...
-elif page == "3. The Style Tokens (Clustering)":
-    st.title("🤖 Discovery: The 5 Style Tokens")
+elif page == "3. Analysis Part 1: The Style Tokens (Clustering)":
+    st.title("Discovery: The 5 Style Tokens")
     st.markdown("We use **K-Means Clustering** to group the audio, and **PCA** to visualize the groups in 2D space.")
 
     # 1. RUN CLUSTERING
@@ -338,8 +367,8 @@ elif page == "3. The Style Tokens (Clustering)":
             st.caption(row['text'])
 
 # --- PAGE 3: INTIMACY (PHYSICS) ---
-elif page == "4. Engineering Intimacy (Physics)":
-    st.title("❤️ The Physics of Intimacy")
+elif page == "4. Analysis Part 2: Engineering Intimacy (Physics)":
+    st.title("The Physics of Intimacy")
     st.markdown(
         "We hypothesize that **Intimacy** and **Intensity** are opposing forces defined by the Proximity Effect.")
 
@@ -370,8 +399,8 @@ elif page == "4. Engineering Intimacy (Physics)":
     st.plotly_chart(fig, use_container_width=True)
 
 # --- PAGE 4: CROSS-MODAL (SEMANTICS) ---
-elif page == "5. Cross-Modal Alignment (Text)":
-    st.title("🔗 Cross-Modal Analysis")
+elif page == "5. Analysis Part 3: Cross-Modal Alignment (Text)":
+    st.title("Cross-Modal Analysis")
     st.markdown("Do the words (Script) match the voice (Performance)?")
 
     # 1. NORMALIZE SCORES FOR COMPARISON
