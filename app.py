@@ -93,7 +93,7 @@ if page == "1. Project Overview":
     >
     > This dataset provides a unique opportunity to solve the **'Prosody Gap'** in Generative Audio. By isolating extreme emotional states, from breathy intimacy to high-pitch panic, we can extract mathematical **'Style Tokens'** that decouple *emotion* from *identity*. 
     >
-    > This analysis lays the groundwork for **Next-Gen Dubbing Technology** (e.g., YouTube Auto-Dub), where an AI must not only translate the words of a creator but also preserve their emotional intensity and pacing across language barriers."
+    > This analysis lays the groundwork for **Next-Gen Dubbing Technology** (e.g., YouTube Auto-Dub), where an AI must not only translate the words of a creator but also preserve their emotional intensity and pacing across language barriers. [Example](https://www.youtube.com/shorts/vR8ss6V0fHI)"
     """)
 
     st.divider()
@@ -342,20 +342,21 @@ elif page == "3. Analysis & Insights":
         st.subheader("1. The 5 Style Tokens (Clustering)")
 
         # --- INTERACTION: KEYWORD HIGHLIGHTER ---
-        # This setup determines the color and title before drawing the chart.
         c_filter, c_info = st.columns([1, 2])
         with c_filter:
             search_term = st.text_input("🔍 Highlight Keyword (e.g., 'Love', 'Kiss')", "")
 
-        # Create the color column for highlighting
+        # 1. CREATE THE MISSING COLUMN (THE FIX)
+        # This copies the index into a real column so Plotly can see it
+        df_raw['real_id'] = df_raw.index
+
+        # 2. SETUP COLORS
         if search_term:
-            # Check if the search term exists in the text column
             df_raw['is_highlighted'] = df_raw['text'].str.contains(search_term, na=False, case=False)
             color_col = 'is_highlighted'
             title_text = f"PCA Map: Highlighting '{search_term}'"
             color_map = {True: "red", False: "lightgrey"}
         else:
-            # Default view: color by cluster ID
             color_col = df_raw['cluster'].astype(str)
             title_text = "PCA Projection: The 5 Emotional Islands"
             color_map = None
@@ -367,29 +368,32 @@ elif page == "3. Analysis & Insights":
             y='pca_y',
             color=color_col,
             title=title_text,
+            # Now 'real_id' exists, so this line won't crash!
+            custom_data=['real_id'],
             hover_data=['text', 'cluster'],
             opacity=0.7,
             color_discrete_map=color_map,
             color_discrete_sequence=px.colors.qualitative.Bold
         )
+        fig_map.update_layout(clickmode='event+select')
 
-        # B. RENDER THE MAP WITH THE EVENT LISTENER (Draws ONLY ONCE)
+        # B. RENDER WITH EVENT LISTENER
         event = st.plotly_chart(
             fig_map,
-            on_select="rerun",  # Crucial: Reruns the script on click
+            on_select="rerun",
             selection_mode="points",
             use_container_width=True
         )
 
         # C. HANDLE CLICK EVENT
         if len(event["selection"]["points"]) > 0:
-            # 1. Grab the index of the clicked point
-            clicked_point_index = event["selection"]["points"][0]["point_index"]
+            # Get the "Passport" ID we stuffed into custom_data
+            clicked_real_id = event["selection"]["points"][0]["customdata"][0]
 
-            # 2. Retrieve the actual data from your dataframe
-            selected_row = df_raw.iloc[clicked_point_index]
+            # Lookup the row
+            selected_row = df_raw.loc[clicked_real_id]
 
-            # 3. Display the Audio Player
+            # Display Audio
             st.info(f"▶️ **Selected Clip:** {selected_row['text']}")
 
             c_audio, c_meta = st.columns([1, 2])
@@ -397,7 +401,8 @@ elif page == "3. Analysis & Insights":
                 st.audio(selected_row['path'])
             with c_meta:
                 st.caption(f"**Cluster:** {selected_row['cluster']}")
-                st.caption(f"**Intimacy Score:** {selected_row['dynamic_intimacy']:.2f}")
+                if 'dynamic_intimacy' in selected_row:
+                    st.caption(f"**Intimacy Score:** {selected_row['dynamic_intimacy']:.2f}")
 
         # 3. THE STYLE TOKENS (Radar Charts)
         cluster_insights = {
@@ -684,22 +689,38 @@ elif page == "4. Conclusions":
 
     st.divider()
 
-    # 4. LIMITATIONS & CHALLENGES (The Critical Analysis)
-    st.subheader("Project Limitations & Challenges")
+    # 4. LIMITATIONS & CHALLENGES (Inserted Here)
+    st.subheader("4. Project Limitations & Challenges")
     st.markdown(
         "While our model successfully identified broad archetypes, we encountered specific challenges inherent to the dataset.")
 
     with st.expander("⚠️ Read Limitation Analysis"):
         st.markdown("""
-            **1. Temporal Instability (The 'Short Clip' Problem)**
-            * **Challenge:** Our clustering model struggled with clips shorter than 1.0 second (e.g., moans, gasps).
-            * **Cause:** Spectral features like *Tonality* and *Pitch* require a sustained duration to stabilize. Short bursts of sound appear as "noise" to the algorithm, often leading to misclassification of "Gasps" into the "Dominant" cluster due to sudden energy spikes.
+        **1. The Global Averaging Bias (The 'Dilution' Effect)**
+        * **Challenge:** Our model calculates the average acoustic profile of an entire clip.
+        * **Implication:** Mixed-emotion clips are misclassified. If a character shouts a command (High Energy) and then sighs (High Breathiness) in the same file, the shout "dilutes" the breathiness score. This causes the file to be sorted into **Cluster 3 (Dominance)** instead of **Cluster 2 (Affection)**, proving the need for millisecond-level Time-Series Analysis.
 
-            **2. Semantic Blindness (Irony & Subtext)**
-            * **Challenge:** The Cross-Modal Alignment flagged "Tsundere" lines as "Bad Acting" (High Mismatch).
-            * **Cause:** Our Rule-Based NLP relies on keywords (*Bag-of-Words*). It cannot detect *Irony* (saying "I hate you" affectionately). A more advanced model (Japanese BERT) would be required to capture this contextual subtext.
+        **2. Acoustic Ambiguity (The 'Tonal Moan' Problem)**
+        * **Challenge:** We found moans in **Cluster 0 (Stability)**, which was unexpected.
+        * **Cause:** To the algorithm, a deep, resonant moan (*"Mmm..."*) looks mathematically identical to a serious narration. Both are **Low Pitch** and **High Tonality** (Stable). The model failed to capture the eroticism because the actor used *Resonance* instead of *Breathiness*, revealing a conflict between **Semantic Category** (Moan) and **Acoustic Physics** (Stable Tone).
 
-            **3. Ecological Validity (Performative Bias)**
-            * **Challenge:** The "Intimacy" engineered here is *Performative*, not *Natural*.
-            * **Implication:** Models trained on this dataset risk falling into the "Uncanny Valley" if deployed for real-world therapy. The acoustic features are exaggerated (hyper-breathy, hyper-high pitch) compared to natural human speech.
+        **3. Temporal Instability (The 'Short Clip' Problem)**
+        * **Challenge:** Clips shorter than 1.0 second (e.g., gasps) often produced chaotic spectral data.
+        * **Cause:** Features like Pitch ($F_0$) require sustained vibration to stabilize. Short bursts appear as "noise," leading to outliers in the Clustering Map.
+
+        **4. Semantic Blindness (Irony & Subtext)**
+        * **Challenge:** The Cross-Modal Alignment flagged "Tsundere" lines as "Bad Acting."
+        * **Cause:** Our Rule-Based NLP relies on keywords. It cannot detect **Irony** (saying "I hate you" affectionately).
+
+        **5. Ecological Validity (Performative Bias)**
+        * **Challenge:** The "Intimacy" engineered here is *Performative*.
+        * **Implication:** The acoustic features are exaggerated (hyper-breathy, hyper-high pitch). Models trained on this data risk falling into the "Uncanny Valley" if deployed for real-world interactions.
             """)
+
+    # 5. FINAL RELEVANCE STATEMENT (The "So What?")
+    st.markdown("### Impact Statement: Expressive Performance Transfer")
+    st.info("""
+         "The primary relevance of this project lies in bridging the **expressivity gap** in modern AI voice synthesis (TTS). 
+         Systems like YouTube's auto-dub are transitioning from simple language translation to **performance transfer**. 
+         Our analysis of the **5 Style Tokens** provides the essential framework for this technology. These clusters function as **Latent Vectors**—the exact acoustic recipes required to inject emotion and maintain a consistent **speaker style** across different languages."
+        """)
