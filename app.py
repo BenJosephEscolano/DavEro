@@ -98,27 +98,6 @@ if page == "1. Project Overview":
 
     st.divider()
 
-    # 3. THE TOOLKIT (Linguistics meets Physics)
-    st.markdown("### Acoustic Features")
-    st.write("We deconstruct the voice into 5 acoustic dimensions, mapping physics to linguistic meaning:")
-
-    # This table bridges your two interests perfectly
-    data_dict = pd.DataFrame([
-        {"Feature": "Breathiness (ZCR)", "Linguistic Concept": "Phonation Type",
-         "Role": "The 'Whisper Factor'. Essential for simulating physical closeness."},
-        {"Feature": "Loudness (RMS)", "Linguistic Concept": "Prosodic Stress",
-         "Role": "Inverse of Intimacy. Low energy creates a 'Private Space'."},
-        {"Feature": "Pitch (F0)", "Linguistic Concept": "Intonation",
-         "Role": "Defines the archetype (e.g., High=Vulnerable, Low=Dominant)."},
-        {"Feature": "Speed (Char/Sec)", "Linguistic Concept": "Tempo",
-         "Role": "Information density. Slow tempo signals comfort/seduction."},
-        {"Feature": "Tonality (Flatness)", "Linguistic Concept": "Vocal Stability",
-         "Role": "Tremble/Jitter signals emotional instability (High Arousal)."}
-    ])
-    st.table(data_dict)
-
-    st.divider()
-
     # 4. DATASET METRICS
     col1, col2, col3 = st.columns(3)
     col1.metric("Sample Size", len(df_raw), "Clips Analyzed")
@@ -129,6 +108,53 @@ if page == "1. Project Overview":
     # 5. RAW DATA INSPECTION
     with st.expander("🔍 Inspect the Raw Signal"):
         st.dataframe(df_raw.head(50))
+
+    st.subheader("Data Dictionary & Variable Definitions")
+
+    # 1. ACOUSTIC FEATURES (The Physics)
+    st.markdown("#### 1. Acoustic Features (The Signal)")
+    st.caption("Extracted via `librosa` from raw audio waves.")
+
+    acoustic_data = [
+        {"Field": "duration", "Metric": "Time (Seconds)",
+         "Definition": "Length of the clip. <1.0s usually indicates non-lexical sounds (gasps, moans)."},
+        {"Field": "loudness", "Metric": "RMS (Energy)",
+         "Definition": "Volume/Intensity. High = Shouting/Anger. Low = Whispering/Intimacy."},
+        {"Field": "breathiness", "Metric": "Zero-Crossing Rate",
+         "Definition": "Texture/Airiness. High ZCR indicates 'noise' (whispers). Low ZCR indicates clear tone."},
+        {"Field": "pitch", "Metric": "Fundamental Freq (F0)",
+         "Definition": "The Tone (Hz). High (>300Hz) = 'Moe'/Panic. Low (<220Hz) = Mature/Dominant."},
+        {"Field": "brightness", "Metric": "Spectral Centroid",
+         "Definition": "Timbre (Sharpness). High = Bright/Anime voice. Low = Dark/Chest voice."},
+        {"Field": "tonality", "Metric": "1 - Spectral Flatness",
+         "Definition": "Stability. 1.0 = Pure musical note. 0.0 = Shaky/Breathy noise."}
+    ]
+    st.table(pd.DataFrame(acoustic_data))
+
+    # 2. SEMANTIC FEATURES (The Symbol)
+    st.markdown("#### 2. Semantic Features (The Symbol)")
+    st.caption("Derived from the text transcript.")
+
+    semantic_data = [
+        {"Field": "speed", "Metric": "Char / Duration",
+         "Definition": "Information Density. Fast = Anxiety/Excitement. Slow = Seduction/Comfort."},
+        {"Field": "semantic_score", "Metric": "Keyword Score (0-10)",
+         "Definition": "Script Intimacy. Based on weighted keywords (e.g., 'Love'=10, 'Stop'=-5)."}
+    ]
+    st.table(pd.DataFrame(semantic_data))
+
+    # 3. ENGINEERED METRICS (The Model)
+    st.markdown("#### 3. Engineered Metrics (The Algorithms)")
+    st.caption("Composite scores calculated using our custom formulas.")
+
+    engineered_data = [
+        {"Field": "dynamic_intimacy", "Formula": "Breathiness + (1 - Loudness)",
+         "Definition": "The Proximity Effect. Measures how 'close' the speaker sounds."},
+        {"Field": "dynamic_intensity", "Formula": "Loudness + Pitch",
+         "Definition": "The Arousal Level. Measures the physical energy of the performance."}
+    ]
+    st.table(pd.DataFrame(engineered_data))
+
 
 # ... inside app.py ...
 
