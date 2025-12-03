@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.decomposition import PCA
@@ -53,6 +54,20 @@ features = ['loudness', 'breathiness', 'pitch', 'brightness', 'tonality']
 scaler = MinMaxScaler()
 df_norm = df_raw.copy()
 df_norm[features] = scaler.fit_transform(df_raw[features])
+
+# --- NEW: INITIALIZE SESSION STATE FOR SLIDERS ---
+if 'w_breath' not in st.session_state:
+    st.session_state.w_breath = 1.5
+if 'w_quiet' not in st.session_state:
+    st.session_state.w_quiet = 1.0
+
+# --- NEW: GLOBAL CALCULATION (Needed for Page 3 Tab 1) ---
+# This ensures 'dynamic_intimacy' exists before you click the PCA map
+df_raw['dynamic_intimacy'] = (
+    df_norm['breathiness'] * st.session_state.w_breath) + (
+    (1 - df_norm['loudness']) * st.session_state.w_quiet)
+
+df_raw['dynamic_intensity'] = (df_norm['loudness'] * 1.5) + (df_norm['pitch'] * 1.0)
 
 # --- PAGE 1: OVERVIEW ---
 if page == "1. Project Overview":
@@ -304,7 +319,7 @@ elif page == "2. Data Exploration & Methodology":
 # ... inside app.py ...
 
 elif page == "3. Analysis & Insights":
-    st.title("🧠 Analysis & Insights")
+    st.title("Analysis & Insights")
     st.markdown("We utilized Unsupervised Machine Learning to uncover hidden patterns in the audio data.")
     # 1. Prepare Features
     features = ['loudness', 'breathiness', 'pitch', 'brightness', 'tonality']
@@ -325,23 +340,25 @@ elif page == "3. Analysis & Insights":
         st.subheader("1. The 5 Style Tokens (Clustering)")
 
         # --- INTERACTION: KEYWORD HIGHLIGHTER ---
-        # This answers: "Does the word 'Love' appear in the 'Tsundere' cluster?"
+        # This setup determines the color and title before drawing the chart.
         c_filter, c_info = st.columns([1, 2])
         with c_filter:
             search_term = st.text_input("🔍 Highlight Keyword (e.g., 'Love', 'Kiss')", "")
 
-        # Create a boolean column for the highlighter
+        # Create the color column for highlighting
         if search_term:
+            # Check if the search term exists in the text column
             df_raw['is_highlighted'] = df_raw['text'].str.contains(search_term, na=False, case=False)
             color_col = 'is_highlighted'
             title_text = f"PCA Map: Highlighting '{search_term}'"
             color_map = {True: "red", False: "lightgrey"}
         else:
+            # Default view: color by cluster ID
             color_col = df_raw['cluster'].astype(str)
             title_text = "PCA Projection: The 5 Emotional Islands"
             color_map = None
 
-        # A. THE MAP (PCA)
+        # A. CREATE THE PCA MAP FIGURE
         fig_map = px.scatter(
             df_raw,
             x='pca_x',
@@ -353,13 +370,32 @@ elif page == "3. Analysis & Insights":
             color_discrete_map=color_map,
             color_discrete_sequence=px.colors.qualitative.Bold
         )
-        st.plotly_chart(fig_map, use_container_width=True)
 
-        # B. KEY INSIGHT BOX
-        st.info(f"""
-        💡 **Key Insight:** The clusters form distinct "Islands," proving that our acoustic features successfully separated the emotional archetypes.
-        {f"Notice how '{search_term}' appears across multiple clusters? This means the word itself doesn't dictate the emotion." if search_term else ""}
-        """)
+        # B. RENDER THE MAP WITH THE EVENT LISTENER (Draws ONLY ONCE)
+        event = st.plotly_chart(
+            fig_map,
+            on_select="rerun",  # Crucial: Reruns the script on click
+            selection_mode="points",
+            use_container_width=True
+        )
+
+        # C. HANDLE CLICK EVENT
+        if len(event["selection"]["points"]) > 0:
+            # 1. Grab the index of the clicked point
+            clicked_point_index = event["selection"]["points"][0]["point_index"]
+
+            # 2. Retrieve the actual data from your dataframe
+            selected_row = df_raw.iloc[clicked_point_index]
+
+            # 3. Display the Audio Player
+            st.info(f"▶️ **Selected Clip:** {selected_row['text']}")
+
+            c_audio, c_meta = st.columns([1, 2])
+            with c_audio:
+                st.audio(selected_row['path'])
+            with c_meta:
+                st.caption(f"**Cluster:** {selected_row['cluster']}")
+                st.caption(f"**Intimacy Score:** {selected_row['dynamic_intimacy']:.2f}")
 
         # 3. THE STYLE TOKENS (Radar Charts)
         cluster_insights = {
@@ -419,7 +455,8 @@ elif page == "3. Analysis & Insights":
             st.json(avg_stats.to_dict())
 
         insight = cluster_insights.get(cluster_id,
-                                       {"title": f"Cluster {cluster_id}", "desc": "No manual analysis available."})
+                                       {"title": f"Cluster {cluster_id}",
+                                        "desc": "No manual analysis available."})
 
         # Display Text
         st.success(f"**{insight['title']}**")
@@ -440,19 +477,6 @@ elif page == "3. Analysis & Insights":
             ))
             fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 1])), showlegend=False)
             st.plotly_chart(fig, use_container_width=True)
-
-
-
-
-        # 3. SAMPLES
-        st.divider()
-        st.write(f"**Listen to Archetype {cluster_id}:**")
-        cols = st.columns(3)
-        for i, (_, row) in enumerate(df_raw[df_raw['cluster'] == cluster_id].sample(3).iterrows()):
-            with cols[i]:
-                st.audio(row['path'])
-                st.caption(row['text'])
-
     # --- TAB 2: INTIMACY ENGINEERING ---
     with tab2:
         st.subheader("2. Engineering Intimacy (The Physics)")
@@ -466,17 +490,18 @@ elif page == "3. Analysis & Insights":
         st.caption(f"Showing {len(filtered_df)} clips (Hidden {len(df_raw) - len(filtered_df)} short clips)")
 
         # Formula Tuners
-        with st.expander("🎛️ Tune the Intimacy Formula"):
-            w_breath = st.slider("Weight: Breathiness", 0.5, 2.0, 1.5)
-            w_quiet = st.slider("Weight: Quietness", 0.5, 2.0, 1.0)
+        with st.expander("Tune the Intimacy Formula"):
+            st.session_state.w_breath = st.slider(
+                "Weight: Breathiness", 0.5, 2.0, st.session_state.w_breath, key='s1')
+            st.session_state.w_quiet = st.slider(
+                "Weight: Quietness", 0.5, 2.0, st.session_state.w_quiet, key='s2')
 
-        # Recalculate based on slider
-        # Note: We must recalculate on the FILTERED dataframe
         filtered_indices = filtered_df.index
         norm_subset = df_norm.loc[filtered_indices]
 
-        filtered_df['dynamic_intimacy'] = (norm_subset['breathiness'] * w_breath) + (
-                    (1 - norm_subset['loudness']) * w_quiet)
+        filtered_df['dynamic_intimacy'] = (
+            norm_subset['breathiness'] * st.session_state.w_breath) + (
+            (1 - norm_subset['loudness']) * st.session_state.w_quiet)
         filtered_df['dynamic_intensity'] = (norm_subset['loudness'] * 1.5) + (norm_subset['pitch'] * 1.0)
 
         col_plot, col_insight = st.columns([3, 1])
