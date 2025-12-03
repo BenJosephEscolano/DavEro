@@ -87,12 +87,14 @@ if page == "1. Project Overview":
     **Why this dataset?** We selected the *NandemoGHS* dataset because it represents **"Performative Intimacy."** The voice actors are not just speaking; they are utilizing extreme paralinguistic control to simulate closeness. This makes it the perfect laboratory to study the **Proximity Effect**.
     """)
 
-    st.markdown("### Why its relevant: A Digital Prosthetic for Loneliness")
+    st.markdown("### Why it Matters: The Prosody Transfer")
     st.markdown("""
-        > "Against the backdrop of a global **male loneliness epidemic**, the demand for 'synthetic intimacy'—from ASMR to AI companions—has skyrocketed. 
-        > This dataset represents the industrial response to that crisis: a highly optimized, paralinguistic simulation of closeness designed to soothe social isolation. 
-        > By decoding the acoustic mechanics of this performance, we are not just analyzing voice acting; **we are reverse-engineering the modern digital prosthetic for human connection.**"
-        """)
+    > "Current Text-to-Speech (TTS) models have mastered **clarity**, but they struggle with **performance**. They can read a script, but they cannot *act*. 
+    >
+    > This dataset provides a unique opportunity to solve the **'Prosody Gap'** in Generative Audio. By isolating extreme emotional states, from breathy intimacy to high-pitch panic, we can extract mathematical **'Style Tokens'** that decouple *emotion* from *identity*. 
+    >
+    > This analysis lays the groundwork for **Next-Gen Dubbing Technology** (e.g., YouTube Auto-Dub), where an AI must not only translate the words of a creator but also preserve their emotional intensity and pacing across language barriers."
+    """)
 
     st.divider()
 
@@ -593,11 +595,11 @@ The massive outlier in the top-left (Score: 0 Text / 10 Audio) proves that in th
 # ... inside app.py ...
 
 elif page == "4. Conclusions":
-    st.title("📝 Conclusions & Recommendations")
+    st.title("Conclusions & Recommendations")
 
     # 1. THE EXECUTIVE SUMMARY
     st.markdown("""
-    ### 🎯 The "Paralinguistic Code" Decoded
+    ### The "Paralinguistic Code" Decoded
     Our research set out to determine if the "soul" of a voice actor could be quantified. 
     By applying unsupervised learning to 1,000 audio samples, we were able to reverse-engineered the **Acoustic DNA of Emotion**.
     """)
@@ -630,44 +632,55 @@ elif page == "4. Conclusions":
 
     st.divider()
 
+    # ... inside Page 4 ...
+
     # 3. INTERACTIVE: THE SCENARIO PLANNER
-    # This specifically targets the "Text boxes and Dropdowns" grading criteria
-    st.subheader("Interactive: Design Your Voice Model")
-    st.markdown("Use our findings to generate a technical specification for a new AI Voice.")
+    st.subheader("Interactive: Style Transfer Director")
+    st.markdown("Simulate how these 'Style Tokens' would be applied in a commercial TTS pipeline.")
 
+    # INPUTS
+    c1, c2 = st.columns([1, 1])
+    with c1:
+        # THE DROPDOWN (Updated for Tech Applications)
+        target_audience = st.selectbox(
+            "1. Select Application Case",
+            ["YouTube Auto-Dub (High Energy)", "Audiobook (Romance)", "NPC Dialogue (Boss Fight)",
+             "GPS Navigation (Calm)"]
+        )
+    with c2:
+        sample_line = st.text_input(
+            "2. Enter Sample Script Line",
+            "I can't believe we actually made it this far!"
+        )
 
-    # THE DROPDOWN
-    target_audience = st.selectbox(
-        "1. Select Target Audience",
-        ["Insomniacs (Sleep Aid)", "Corporate Training", "Dating Sim Player", "Emergency Alert System"]
-    )
-
-
-    # LOGIC ENGINE
-    if target_audience == "Insomniacs (Sleep Aid)":
-        rec_cluster = "Cluster 4 (Seduction/Deep)"
-        tuning = "Lower Pitch <200Hz, Maximize Vocal Fry."
-        reason = "Low frequencies induce relaxation. Vocal fry adds texture without waking the user."
-    elif target_audience == "Corporate Training":
-        rec_cluster = "Cluster 1 (Neutral)"
-        tuning = "Maximize Tonality, Zero Breathiness."
-        reason = "High breathiness reduces intelligibility. Prioritize clarity and authority."
-    elif target_audience == "Dating Sim Player":
-        rec_cluster = "Cluster 2 (Affection)"
-        tuning = "Increase Breathiness +20%, Reduce Volume."
-        reason = "Triggers the 'Proximity Effect', creating the illusion of physical closeness."
-    else:  # Emergency Alert
+    # LOGIC ENGINE (Updated)
+    if target_audience == "YouTube Auto-Dub (High Energy)":
+        rec_cluster = "Cluster 0/3 (Stability/Dominant)"
+        tuning = "Maximize Loudness, High Variance in Pitch."
+        reason = "Matches the 'Hype' energy of creators like MrBeast. Needs high dynamic range to retain viewer retention."
+    elif target_audience == "Audiobook (Romance)":
+        rec_cluster = "Cluster 4 (Deep)"
+        tuning = "Lower Pitch, Increase Vocal Fry (Texture)."
+        reason = "Creates an immersive, 'in-ear' storytelling experience closer to radio drama than standard narration."
+    elif target_audience == "NPC Dialogue (Boss Fight)":
         rec_cluster = "Cluster 3 (Dominance)"
-        tuning = "Maximize Loudness, Flatten Pitch."
-        reason = "Urgency requires a 'Hard' voice to cut through background noise."
+        tuning = "Maximize Tonality, Zero Breathiness, Hard Attack."
+        reason = "Cut through game sound effects (SFX). Signals authority and threat level to the player."
+    else:  # GPS Navigation
+        rec_cluster = "Cluster 1 (Neutral)"
+        tuning = "Maximize Stability, Normalize Pitch."
+        reason = "Cognitive Load Management. The driver needs information without emotional distraction."
 
+    # OUTPUT CARD
     st.warning(f"""
-    **Target:** {target_audience}
-    ---
-    **Recommended Model:** {rec_cluster}
-    **Acoustic Tuning:** {tuning}
-    **Scientific Rationale:** {reason}
-    """)
+        **Use Case:** {target_audience}
+        **Script:** *"{sample_line}"*
+
+        ---
+        **Target Style Token:** {rec_cluster}
+        **Prosody Tuning:** {tuning}
+        **Engineering Logic:** {reason}
+        """)
 
     st.divider()
 
