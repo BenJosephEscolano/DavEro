@@ -572,7 +572,7 @@ elif page == "3. Analysis & Insights":
 
         # D. VIDEO REFERENCE
         st.divider()
-        st.subheader("🎥 Examples: Intimacy vs Arousal")
+        st.subheader("Examples: Intimacy vs Arousal")
 
         # UPDATE THIS PATH to your actual video file
         VIDEO_PATH_1 = "intimacy.mp4"
@@ -583,15 +583,15 @@ elif page == "3. Analysis & Insights":
 
         with col1:
             if os.path.exists(VIDEO_PATH_1):
-                st.caption("Reference material for paralinguistic intimacy.")
                 st.video(VIDEO_PATH_1)
+                st.caption("Reference material for paralinguistic intimacy.")
             else:
                 st.warning(f"Video reference not found at: {VIDEO_PATH_1}")
 
         with col2:
             if os.path.exists(VIDEO_PATH_2):
-                st.caption("Reference material for paralinguistic arousal.")
                 st.video(VIDEO_PATH_2)
+                st.caption("Reference material for paralinguistic arousal.")
             else:
                 st.warning(f"Video reference not found at: {VIDEO_PATH_2}")
             # --- THE DISCOVERY BLOCK ---
