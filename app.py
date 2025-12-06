@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import os
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import MinMaxScaler
@@ -421,7 +422,7 @@ elif page == "3. Analysis & Insights":
 
             # Display Audio
             st.info(f"▶️ **Selected Clip:** {selected_row['text']}")
-
+            st.caption("🎧 **Headphones Recommended for a better experience**")
             c_audio, c_meta = st.columns([1, 2])
             with c_audio:
                 st.audio(selected_row['path'])
@@ -514,106 +515,150 @@ elif page == "3. Analysis & Insights":
     with tab2:
         st.subheader("2. Engineering Intimacy (The Physics)")
 
-        # --- INTERACTION: DURATION FILTER ---
-        # Filters out short noises to clean up the graph
-        st.markdown("**Filter Data**")
+        # Filter Logic
         min_dur = st.slider("Hide clips shorter than (seconds):", 0.0, 5.0, 1.0, step=0.5)
+
+        # We perform the filter, but we KEEP 'real_id' so the click still works!
         filtered_df = df_raw[df_raw['duration'] >= min_dur].copy()
 
-        st.caption(f"Showing {len(filtered_df)} clips (Hidden {len(df_raw) - len(filtered_df)} short clips)")
+        st.caption(f"Showing {len(filtered_df)} clips")
 
         # Formula Tuners
-        with st.expander("Tune the Intimacy Formula"):
-            st.session_state.w_breath = st.slider(
-                "Weight: Breathiness", 0.5, 2.0, st.session_state.w_breath, key='s1')
-            st.session_state.w_quiet = st.slider(
-                "Weight: Quietness", 0.5, 2.0, st.session_state.w_quiet, key='s2')
+        with st.expander("🎛️ Tune the Intimacy Formula"):
+            w_breath = st.slider("Weight: Breathiness", 0.5, 2.0, 1.5)
+            w_quiet = st.slider("Weight: Quietness", 0.5, 2.0, 1.0)
 
-        filtered_indices = filtered_df.index
-        norm_subset = df_norm.loc[filtered_indices]
-
-        filtered_df['dynamic_intimacy'] = (
-            norm_subset['breathiness'] * st.session_state.w_breath) + (
-            (1 - norm_subset['loudness']) * st.session_state.w_quiet)
+        # Recalculate (Using normalized subset)
+        norm_subset = df_norm.loc[filtered_df.index]
+        filtered_df['dynamic_intimacy'] = (norm_subset['breathiness'] * w_breath) + (
+                    (1 - norm_subset['loudness']) * w_quiet)
         filtered_df['dynamic_intensity'] = (norm_subset['loudness'] * 1.5) + (norm_subset['pitch'] * 1.0)
 
-        col_plot, col_insight = st.columns([3, 1])
-        with col_plot:
-            fig_scat = px.scatter(
-                filtered_df,
-                x="dynamic_intimacy",
-                y="dynamic_intensity",
-                color="breathiness",
-                hover_data=['text'],
-                title="The Emotional Landscape (Filtered)",
-                labels={"dynamic_intimacy": "Calculated Proximity", "dynamic_intensity": "Calculated Arousal"},
-                color_continuous_scale="Viridis"
-            )
-            # Add Zones
-            fig_scat.add_shape(type="rect", x0=1.5, y0=0, x1=2.5, y1=1.0, line=dict(color="Green"), fillcolor="Green",
-                               opacity=0.1)
-            st.plotly_chart(fig_scat, use_container_width=True)
+        # A. INTERACTIVE SCATTER PLOT
+        fig_scat = px.scatter(
+            filtered_df,
+            x="dynamic_intimacy",
+            y="dynamic_intensity",
+            color="breathiness",
+            title="The Emotional Landscape (Select a point to listen)",
+            # CRITICAL: Pass the ID so we can find the audio
+            custom_data=['real_id'],
+            hover_data=['text'],
+            labels={"dynamic_intimacy": "Proximity (Intimacy)", "dynamic_intensity": "Arousal (Intensity)"},
+            color_continuous_scale="Viridis"
+        )
+        fig_scat.update_layout(clickmode='event+select')
 
-        with col_insight:
-            st.markdown("### 🟢 The ASMR Zone")
-            st.write("Files in the green box represent mathematically optimized intimacy.")
+        # Add the Green Zone
+        fig_scat.add_shape(type="rect", x0=1.5, y0=0, x1=2.5, y1=1.0, line=dict(color="Green"), fillcolor="Green",
+                           opacity=0.1)
 
-            if not filtered_df.empty:
-                top_file = filtered_df.sort_values('dynamic_intimacy', ascending=False).iloc[0]
-                st.audio(top_file['path'])
-                st.caption(f"Rank #1: {top_file['text']}")
+        # Render Chart
+        event_2 = st.plotly_chart(fig_scat, on_select="rerun", selection_mode="points", use_container_width=True)
+
+        # B. CLICK HANDLER (TAB 2)
+        if len(event_2["selection"]["points"]) > 0:
+            clicked_id = event_2["selection"]["points"][0]["customdata"][0]
+            row = df_raw.loc[clicked_id]
+
+            st.info(f"▶️ **Selected Analysis:** {row['text']}")
+            st.caption("🎧 **Headphones Recommended for a better experience**")
+
+            c1, c2 = st.columns([1, 2])
+            with c1: st.audio(row['path'])
+            with c2:
+                st.metric("Intimacy Score", f"{row['dynamic_intimacy']:.2f}")
+                st.metric("Intensity Score", f"{row['dynamic_intensity']:.2f}")
+
+        # D. VIDEO REFERENCE
+        st.divider()
+        st.subheader("🎥 Examples: Intimacy vs Arousal")
+
+        # UPDATE THIS PATH to your actual video file
+        VIDEO_PATH_1 = "intimacy.mp4"
+        VIDEO_PATH_2 = "arousal.mp4"
+
+        # Create two columns for side-by-side layout
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if os.path.exists(VIDEO_PATH_1):
+                st.caption("Reference material for paralinguistic intimacy.")
+                st.video(VIDEO_PATH_1)
             else:
-                st.warning("No files match filter.")
-        # --- THE DISCOVERY BLOCK (Your New Text) ---
+                st.warning(f"Video reference not found at: {VIDEO_PATH_1}")
+
+        with col2:
+            if os.path.exists(VIDEO_PATH_2):
+                st.caption("Reference material for paralinguistic arousal.")
+                st.video(VIDEO_PATH_2)
+            else:
+                st.warning(f"Video reference not found at: {VIDEO_PATH_2}")
+            # --- THE DISCOVERY BLOCK ---
         st.divider()
         st.subheader("Insight: The Biological Constraint")
         st.info("""
-        **Initially, we hypothesized that Intimacy and Intensity were orthogonal vectors**, similar to the Russell Circumplex Model, implying they could vary independently.
+           **Initially, we hypothesized that Intimacy and Intensity were orthogonal vectors**, similar to the Russell Circumplex Model, implying they could vary independently.
 
-        **However, our data refutes this.** The scatter plot reveals a strong **Negative Correlation**. This led to a key discovery: **The Biological Constraint of Intimacy.**
+           **However, our data refutes this.** The scatter plot reveals a strong **Negative Correlation**. This led to a key discovery: **The Biological Constraint of Intimacy.**
 
-        The "Empty Top-Right Corner" of the graph proves that high-arousal intimacy is physically impossible. To maximize the *Proximity Effect* (Intimacy), an actor must sacrifice *Intensity*. 
+           The "Empty Top-Right Corner" of the graph proves that high-arousal intimacy is physically impossible. To maximize the *Proximity Effect* (Intimacy), an actor must sacrifice *Intensity*. 
 
-        This suggests that in the grammar of voice acting, **Vulnerability (Breathiness) requires the surrender of Power (Loudness).**
-        """)
+           This suggests that in the grammar of voice acting, **Vulnerability (Breathiness) requires the surrender of Power (Loudness).**
+           """)
 
     # --- TAB 3: CROSS-MODAL ALIGNMENT ---
     with tab3:
-        st.subheader("3. Cross-Modal Alignment")
+        st.subheader("3. Cross-Modal Alignment (The Acting Check)")
 
-        # --- INTERACTION: ANOMALY THRESHOLD ---
-        # Allows user to isolate "Bad Acting"
         st.markdown("**Find Anomalies**")
-        threshold = st.slider("Mismatch Severity Threshold", 0.0, 5.0, 0.0,
-                              help="0 = Show All. 5 = Show only extreme mismatches.")
+        threshold = st.slider("Mismatch Severity Threshold", 0.0, 5.0, 0.0)
 
-        # Prep Data
+        # Calculate Logic
         acoustic_raw = (df_norm['breathiness'] * 1.5) + ((1 - df_norm['loudness']) * 1.0)
         df_raw['acoustic_final'] = (acoustic_raw / acoustic_raw.max()) * 10
         if 'semantic_score' in df_raw.columns:
             df_raw['semantic_final'] = (df_raw['semantic_score'] / df_raw['semantic_score'].max()) * 10
 
-        # Calculate Difference
         df_raw['mismatch'] = abs(df_raw['acoustic_final'] - df_raw['semantic_final'])
+        anomaly_df = df_raw[df_raw['mismatch'] >= threshold].copy()
 
-        # Filter
-        anomaly_df = df_raw[df_raw['mismatch'] >= threshold]
-
+        # A. INTERACTIVE SCATTER PLOT
         fig_align = px.scatter(
             anomaly_df,
             x="semantic_final",
             y="acoustic_final",
             color="mismatch",
             size='duration',
+            title=f"Performance Alignment ({len(anomaly_df)} clips)",
+            # CRITICAL: Pass the ID
+            custom_data=['real_id'],
             hover_data=['text'],
-            title=f"Performance Alignment (Showing {len(anomaly_df)} clips)",
             labels={"semantic_final": "Script Intimacy (0-10)", "acoustic_final": "Vocal Intimacy (0-10)"},
             color_continuous_scale="Turbo"
         )
-        # Perfect Line
         fig_align.add_shape(type="line", x0=0, y0=0, x1=10, y1=10, line=dict(color="Green", dash="dash"))
-        st.plotly_chart(fig_align, use_container_width=True)
+        fig_align.update_layout(clickmode='event+select')
 
+        event_3 = st.plotly_chart(fig_align, on_select="rerun", selection_mode="points", use_container_width=True)
+
+        # B. CLICK HANDLER (TAB 3)
+        if len(event_3["selection"]["points"]) > 0:
+            clicked_id = event_3["selection"]["points"][0]["customdata"][0]
+            row = df_raw.loc[clicked_id]
+
+            st.info(f"▶️ **Selected Anomaly:** {row['text']}")
+            st.caption("🎧 **Headphones Recommended for a better experience**")
+
+            c1, c2 = st.columns([1, 2])
+            with c1:
+                st.audio(row['path'])
+            with c2:
+                st.write(f"**Mismatch Score:** {row['mismatch']:.1f}")
+                if row['acoustic_final'] > row['semantic_final']:
+                    st.success("Type: **Elevation** (Voice > Text)")
+                else:
+                    st.error("Type: **Subversion/Bad Acting** (Text > Voice)")
         st.info(f"""
        Our Cross-Modal Analysis reveals that while most performances align with the script (the diagonal), the most interesting data points are the Dissonant Outliers.
 
@@ -621,7 +666,6 @@ The massive outlier in the top-left (Score: 0 Text / 10 Audio) proves that in th
         """)
 
 # --- PAGE 3: INTIMACY (PHYSICS) ---
-# ... inside app.py ...
 
 # ... inside app.py ...
 
