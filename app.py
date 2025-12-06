@@ -404,6 +404,8 @@ elif page == "3. Analysis & Insights":
         )
         fig_map.update_layout(clickmode='event+select')
 
+
+
         # B. RENDER WITH EVENT LISTENER
         event = st.plotly_chart(
             fig_map,
@@ -430,6 +432,8 @@ elif page == "3. Analysis & Insights":
                 st.caption(f"**Cluster:** {selected_row['cluster']}")
                 if 'dynamic_intimacy' in selected_row:
                     st.caption(f"**Intimacy Score:** {selected_row['dynamic_intimacy']:.2f}")
+        else:
+            st.info("👆 **Click on any dot below to play the audio and see details.**")
 
         # 3. THE STYLE TOKENS (Radar Charts)
         cluster_insights = {
@@ -564,11 +568,14 @@ elif page == "3. Analysis & Insights":
             st.info(f"▶️ **Selected Analysis:** {row['text']}")
             st.caption("🎧 **Headphones Recommended for a better experience**")
 
-            c1, c2 = st.columns([1, 2])
+            c1, c2, c3 = st.columns([2, 1, 1])
             with c1: st.audio(row['path'])
             with c2:
                 st.metric("Intimacy Score", f"{row['dynamic_intimacy']:.2f}")
+            with c3:
                 st.metric("Intensity Score", f"{row['dynamic_intensity']:.2f}")
+        else:
+            st.info("👆 **Click on any dot below to play the audio and see details.**")
 
         # D. VIDEO REFERENCE
         st.divider()
@@ -659,7 +666,11 @@ elif page == "3. Analysis & Insights":
                     st.success("Type: **Elevation** (Voice > Text)")
                 else:
                     st.error("Type: **Subversion/Bad Acting** (Text > Voice)")
-        st.info(f"""
+        else:
+            st.info("👆 **Click on any dot below to play the audio and see details.**")
+
+        with st.expander("**Insights**", expanded=True):
+            st.info(f"""
        Our Cross-Modal Analysis reveals that while most performances align with the script (the diagonal), the most interesting data points are the Dissonant Outliers.
 
 The massive outlier in the top-left (Score: 0 Text / 10 Audio) proves that in this genre, Paralinguistics override Semantics. The actors are injecting massive amounts of intimacy into neutral text, effectively 'elevating' the script through pure vocal technique. Conversely, the outliers on the bottom-right likely capture 'Tsundere' performances, where the acoustic anger masks the semantic affection.
